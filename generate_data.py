@@ -17,7 +17,7 @@ from pathlib import Path
 import toml
 from google.cloud import storage
 
-from prefect import Parameter, task, Flow
+from prefect import task, flow
 
 from progen_transformer.data import with_tfrecord_writer
 from progen_transformer.utils import clear_directory_
@@ -152,8 +152,8 @@ def files_to_tfrecords(config):
                 blob = bucket.blob(tfrecord_filename)
                 blob.upload_from_filename(tfrecord_path, timeout = GCS_WRITE_TIMEOUT)
 
-with Flow('parse-fasta') as flow:
-    config = Parameter('config', required = True)
+@flow
+def parse_fasta(config):
     fasta_to_tmp_files(config = config)
     files_to_tfrecords(config = config)
 
@@ -169,7 +169,7 @@ def main(
     assert config_path.exists(), f'config does not exist at {str(config_path)}'
 
     config = toml.loads(config_path.read_text())
-    flow.run(config = config)
+    parse_fasta(config = config)
 
 if __name__ == '__main__':
     main()

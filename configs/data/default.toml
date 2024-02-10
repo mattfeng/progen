@@ -1,5 +1,5 @@
-read_from = "./uniref50.fasta"
-write_to = "./train_data"
+read_from = "/data/protein-modeling/raw/uniref50/uniref50.fasta"
+write_to = "/data/protein-modeling/preprocessed/open-progen/train_data"
 num_samples = 25000
 max_seq_len = 1024
 prob_invert_seq_annotation = 0.5

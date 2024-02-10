@@ -6,9 +6,11 @@ authors = ["Phil Wang <lucidrains@gmail.com>"]
 license = "MIT"
 
 [tool.poetry.dependencies]
-python = ">=3.7,<3.9"
-jax = "^0.2.20"
-jaxlib = "^0.1.71"
+python = ">=3.8,<3.9"
+# jax = "^0.2.20"
+# jaxlib = "^0.1.71"
+jax = {version = "0.4.13", extras = ["cuda12-pip"], platform = "linux"}
+jaxlib = "0.4.13"
 python-dotenv = "^0.19.0"
 dm-haiku = "^0.0.4"
 jmp = "^0.0.2"
@@ -17,15 +19,17 @@ pyfaidx = "^0.6.2"
 tensorflow = "^2.6.0"
 tqdm = "^4.62.2"
 wandb = "^0.12.1"
-cloudpickle = "^1.6.0"
+# cloudpickle = "^1.6.0"
 einops = "^0.3.2"
-click = ">7.0,<8.0"
+# click = ">7.0,<8.0"
 click-option-group = "^0.5.3"
 google-cloud-storage = "^1.42.0"
 humanize = "^3.11.0"
-Jinja2 = "<3.0"
-prefect = "^0.15.5"
+# Jinja2 = "<3.0"
+# prefect = "^0.15.5"
+prefect = "^2.14.21"
 toml = "^0.10.2"
+tensorflow-io-gcs-filesystem = "0.27.0"
 
 [tool.poetry.dev-dependencies]
 
