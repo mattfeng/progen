@@ -1,3 +1,8 @@
+[[tool.poetry.source]]
+name = "jax_cuda"
+url = "https://storage.googleapis.com/jax-releases/jax_cuda_releases.html"
+priority = "explicit"
+
 [tool.poetry]
 name = "progen"
 version = "0.0.36"
@@ -9,8 +14,14 @@ license = "MIT"
 python = ">=3.8,<3.9"
 # jax = "^0.2.20"
 # jaxlib = "^0.1.71"
-jax = {version = "0.4.13", extras = ["cuda12-pip"], platform = "linux"}
-jaxlib = "0.4.13"
+jax = [
+    {version = "0.4.13", extras = ["cuda12-pip"], platform = "linux"},
+    {version = "0.4.13", platform = "darwin"},
+]
+jaxlib = [
+    {version = "0.4.13", platform = "linux", source = "jax_cuda"},
+    {version = "0.4.13", platform = "darwin"},
+]
 python-dotenv = "^0.19.0"
 dm-haiku = "^0.0.4"
 jmp = "^0.0.2"
