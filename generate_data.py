@@ -154,8 +154,10 @@ def files_to_tfrecords(config):
 
 with Flow('parse-fasta') as flow:
     config = Parameter('config', required = True)
-    fasta_to_tmp_files(config = config)
-    files_to_tfrecords(config = config)
+    flow.chain(
+        fasta_to_tmp_files(config = config),
+        files_to_tfrecords(config = config)
+    )
 
 @click.command()
 @click.option('--data_dir', default = './configs/data')
