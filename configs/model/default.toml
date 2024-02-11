@@ -1,7 +1,9 @@
 num_tokens = 256
-dim = 512
-depth = 6
-dim_head = 64
-heads = 8
+# dim = 512
+dim = 128
+depth = 3
+# dim_head = 64
+dim_head = 32
+heads = 3
 window_size = 512
 seq_len = 1024
