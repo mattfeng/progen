@@ -138,8 +138,6 @@ def main(
     num_params = tree_util.tree_reduce(lambda acc, el: acc + el.size, params, 0)
     num_params_readable = humanize.naturalsize(num_params)
 
-    wandb.config.num_params = num_params
-
     wandb_kwargs = {'mode': 'disabled'} if wandb_off else {}
 
     if exists(last_checkpoint) and exists(last_checkpoint['run_id']):
@@ -148,6 +146,8 @@ def main(
 
     wandb.init(project = wandb_project_name, **wandb_kwargs)
     wandb_run_id = wandb.run.id if not wandb_off else None
+
+    wandb.config.num_params = num_params
 
     # get tf dataset
 
