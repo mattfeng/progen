@@ -37,6 +37,7 @@ set_hardware_rng_(jax)
 @click.option('--seed', default = 42)
 @click.option('--batch_size', default = 4)
 @click.option('--grad_accum_every', default = 4)
+@click.option('--epochs', default = 100)
 @click.option('--learning_rate', default = 2e-4)
 @click.option('--weight_decay', default = 1e-3)
 @click.option('--data_parallel', default = False, is_flag = True)
@@ -59,6 +60,7 @@ def main(
     seed,
     batch_size,
     grad_accum_every,
+    epochs,
     learning_rate,
     weight_decay,
     data_parallel,
@@ -152,21 +154,22 @@ def main(
     # get tf dataset
 
     total_train_seqs, get_train_dataset = iterator_from_tfrecords_folder(data_path, data_type = 'train')
-    total_valid_seqs, get_valid_dataset = iterator_from_tfrecords_folder(data_path, data_type = 'valid',)
+    total_valid_seqs, get_valid_dataset = iterator_from_tfrecords_folder(data_path, data_type = 'valid')
 
     assert total_train_seqs > 0, 'no protein sequences found for training'
     assert total_valid_seqs > 0, 'no protein sequences found for validation'
 
     train_dataset = get_train_dataset(
-        seq_len = seq_len,
-        batch_size = batch_size,
-        skip = start_seq_index
-    )
+        seq_len=seq_len,
+        batch_size=batch_size,
+        skip=start_seq_index, 
+        loop=True
+    ) # note that because loop=True, batches on different epochs will be different
 
     valid_dataset = get_valid_dataset(
-        seq_len = seq_len,
-        batch_size = batch_size,
-        loop = True
+        seq_len=seq_len,
+        batch_size=batch_size,
+        loop=True
     )
 
     # print
@@ -181,45 +184,48 @@ def main(
     effective_batch_size = batch_size * grad_accum_every
     seq_index_ranges = range(start_seq_index, total_train_seqs, effective_batch_size)    
 
-    for i, seq_index in tqdm.tqdm(enumerate(seq_index_ranges), mininterval = 10., desc = 'training', total = len(seq_index_ranges)):
-        for _ in range(grad_accum_every):
-            data = next(train_dataset)
+    for epoch in range(1, epochs + 1):
+        print(f"==== starting epoch: {epoch} ====")
 
-            loss, grads = loss_fn(params, next(rng), data)
-            updates, optim_state = optim.update(grads, optim_state, params)
-            params = apply_updates(params, updates)
+        for i, seq_index in tqdm.tqdm(enumerate(seq_index_ranges), mininterval = 10., desc = 'training', total = len(seq_index_ranges)):
+            for _ in range(grad_accum_every):
+                data = next(train_dataset)
 
-        print(f'loss: {loss.item()}')
-        wandb.log({'loss': loss.item()})
+                loss, grads = loss_fn(params, next(rng), data)
+                updates, optim_state = optim.update(grads, optim_state, params)
+                params = apply_updates(params, updates)
 
-        if i % checkpoint_every == 0:
-            package = {
-                'next_seq_index': seq_index + effective_batch_size,
-                'params': params,
-                'optim_state': optim_state,
-                'model_config': model_kwargs,
-                'run_id': wandb_run_id
-            }
+            print(f'loss: {loss.item()}')
+            wandb.log({'loss': loss.item()})
 
-            save_checkpoint(package, checkpoint_keep_n)
-            print(f"checkpoint to start at sequence index of {package['next_seq_index']}")
+            if i % checkpoint_every == 0:
+                package = {
+                    'next_seq_index': seq_index + effective_batch_size,
+                    'params': params,
+                    'optim_state': optim_state,
+                    'model_config': model_kwargs,
+                    'run_id': wandb_run_id
+                }
 
-        if i % validate_every == 0:
-            valid_data = next(valid_dataset)
-            loss, _ = loss_fn(params, next(rng), valid_data)
-            print(f'valid_loss: {loss.item()}')
-            wandb.log({'valid_loss': loss.item()})
+                save_checkpoint(package, checkpoint_keep_n)
+                print(f"checkpoint to start at sequence index of {package['next_seq_index']}")
 
-        if i % sample_every == 0:
-            valid_data = next(valid_dataset)[0]
-            prime = valid_data[:prime_length]
-            prime_str = decode_tokens(prime)
+            if i % validate_every == 0:
+                valid_data = next(valid_dataset)
+                loss, _ = loss_fn(params, next(rng), valid_data)
+                print(f'valid_loss: {loss.item()}')
+                wandb.log({'valid_loss': loss.item()})
 
-            sampled = sample(rng, model_apply, params, prime, seq_len, top_k = 25)
-            sampled_str = decode_tokens(sampled[prime_length:])
+            if i % sample_every == 0:
+                valid_data = next(valid_dataset)[0]
+                prime = valid_data[:prime_length]
+                prime_str = decode_tokens(prime)
 
-            print(prime_str, "\n", "*" * 40, "\n", sampled_str)
-            wandb.log({'samples': wandb.Html(sample_tmpl.render(prime_str = prime_str, sampled_str = sampled_str))})
+                sampled = sample(rng, model_apply, params, prime, seq_len, top_k = 25)
+                sampled_str = decode_tokens(sampled[prime_length:])
+
+                print(prime_str, "\n", "*" * 40, "\n", sampled_str)
+                wandb.log({'samples': wandb.Html(sample_tmpl.render(prime_str = prime_str, sampled_str = sampled_str))})
 
 if __name__ == '__main__':
     main()
